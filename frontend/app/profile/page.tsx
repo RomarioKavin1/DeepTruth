@@ -3,13 +3,14 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Settings, Grid, BookMarked, ArrowLeft } from "lucide-react";
+import { Settings, Grid, BookMarked, ArrowLeft, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import VideoThumbnail from "@/components/video-thumbnail";
 import VideoCard from "@/components/video-card";
 import { Video } from "@/types/video";
+import { signOut } from "next-auth/react";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -49,6 +50,10 @@ export default function ProfilePage() {
     setVideos(mockVideos);
   }, []);
 
+  const handleLogout = async () => {
+    await signOut({ redirect: true, callbackUrl: "/" });
+  };
+
   return (
     <div className="flex flex-col h-full fixed inset-0 bg-[#f5f5f5] dark:bg-black">
       <header className="flex justify-center p-4 bg-[#f5f5f5] dark:bg-black border-b border-black dark:border-white safe-top">
@@ -66,16 +71,28 @@ export default function ProfilePage() {
           <h1 className="text-xl font-bold">
             PRO<span className="text-[#10b981]">FILE</span>
           </h1>
-          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => router.push("/settings")}
-              className="brutalist-box bg-white dark:bg-black"
-            >
-              <Settings className="h-5 w-5" />
-            </Button>
-          </motion.div>
+          <div className="flex space-x-2">
+            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => router.push("/settings")}
+                className="brutalist-box bg-white dark:bg-black"
+              >
+                <Settings className="h-5 w-5" />
+              </Button>
+            </motion.div>
+            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleLogout}
+                className="brutalist-box bg-white dark:bg-black"
+              >
+                <LogOut className="h-5 w-5" />
+              </Button>
+            </motion.div>
+          </div>
         </div>
       </header>
 
