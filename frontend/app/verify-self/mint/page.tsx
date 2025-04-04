@@ -1,17 +1,29 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import Link from "next/link";
 import { motion } from "framer-motion";
+import { Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
-export default function VerifySelfPage() {
+export default function MintPage() {
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+
+  const handleMint = async () => {
+    setIsLoading(true);
+    try {
+      // Minting logic will be integrated here
+      console.log("Minting DeepName");
+      // For now, just redirect to the profile page
+      router.push("/profile");
+    } catch (error) {
+      console.error("Error minting DeepName:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-[#f5f5f5] dark:bg-black relative overflow-hidden">
       {/* Background elements */}
@@ -60,7 +72,7 @@ export default function VerifySelfPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.5 }}
           >
-            GET YOUR <span className="text-[#10b981]">DEEPNAME</span>
+            MINT YOUR <span className="text-[#10b981]">DEEPNAME</span>
           </motion.h1>
 
           <div className="space-y-4">
@@ -70,7 +82,7 @@ export default function VerifySelfPage() {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5, duration: 0.5 }}
             >
-              Complete these steps to get your DeepTruth ENS Subdomain
+              Your DeepName is ready to be minted
             </motion.p>
           </div>
         </motion.div>
@@ -82,11 +94,20 @@ export default function VerifySelfPage() {
           className="space-y-4 pt-8"
         >
           <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-            <Link href="/verify-self/step1" className="w-full block">
-              <Button className="w-full py-6 text-lg brutalist-button">
-                BEGIN VERIFICATION
-              </Button>
-            </Link>
+            <Button
+              onClick={handleMint}
+              className="w-full py-6 text-lg brutalist-button"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-6 w-6 animate-spin" />
+                  MINTING...
+                </>
+              ) : (
+                "MINT DEEPNAME"
+              )}
+            </Button>
           </motion.div>
         </motion.div>
       </motion.div>

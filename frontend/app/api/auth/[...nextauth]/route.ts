@@ -62,8 +62,9 @@ const authOptions: NextAuthOptions = {
       }
       return session;
     },
-    async signIn({ user }) {
-      return true;
+    async redirect({ url, baseUrl }) {
+      // Always redirect to verify-self page after login
+      return `${baseUrl}/verify-self`;
     },
   },
   debug: process.env.NODE_ENV === "development",
