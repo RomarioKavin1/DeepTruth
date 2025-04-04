@@ -1,103 +1,54 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import AnimatedLogo from "@/components/animated-logo";
+import { LogIn } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 
-export default function VerifyWorldPage() {
-  const router = useRouter();
+export default function VerifyWorld() {
+  const searchParams = useSearchParams();
+  const error = searchParams.get("error");
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+
+  const handleSignIn = async () => {
+    await signIn("worldcoin", { callbackUrl });
+  };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-[#f5f5f5] dark:bg-black relative overflow-hidden">
-      {/* Background elements */}
-      <motion.div
-        className="absolute top-20 right-20 w-40 h-40 bg-[#10b981] opacity-10"
-        animate={{ rotate: 360 }}
-        transition={{
-          duration: 30,
-          repeat: Number.POSITIVE_INFINITY,
-          ease: "linear",
-        }}
-      />
-      <motion.div
-        className="absolute bottom-40 left-10 w-20 h-20 bg-[#10b981] opacity-10"
-        animate={{
-          y: [0, -20, 0],
-          scale: [1, 1.1, 1],
-        }}
-        transition={{
-          repeat: Number.POSITIVE_INFINITY,
-          duration: 5,
-          ease: "easeInOut",
-        }}
-      />
+    <div className="flex min-h-screen items-center justify-center bg-[#f5f5f5] dark:bg-black p-4">
+      <div className="w-full max-w-md space-y-8 text-center">
+        <div className="space-y-4">
+          <h1 className="text-4xl font-bold">
+            Verify with <span className="text-[#10b981]">World ID</span>
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            Prove your humanity and access exclusive features
+          </p>
+        </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8 }}
-        className="w-full max-w-md text-center space-y-8 z-10"
-      >
-        <motion.div
-          initial={{ scale: 0.9 }}
-          animate={{ scale: 1 }}
-          transition={{
-            type: "spring",
-            stiffness: 260,
-            damping: 20,
-          }}
-          className="brutalist-box p-8 bg-white dark:bg-black"
-        >
-          <div className="flex justify-center mb-4">
-            <AnimatedLogo compact={true} />
+        {error && (
+          <div className="p-4 text-red-600 bg-red-100 dark:bg-red-900/20 rounded-lg">
+            {error === "Callback"
+              ? "Verification failed. Please try again."
+              : error}
           </div>
+        )}
 
-          <motion.h1
-            className="text-4xl font-bold tracking-tight text-black dark:text-white mb-6"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.5 }}
+        <motion.div
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className="pt-4"
+        >
+          <Button
+            onClick={handleSignIn}
+            className="w-full brutalist-button flex items-center justify-center space-x-2 bg-[#10b981] hover:bg-[#0d9668] text-white py-6"
           >
-            VERIFY WITH <span className="text-[#10b981]">WORLD</span>
-          </motion.h1>
-
-          <div className="space-y-4">
-            <motion.p
-              className="text-gray-800 dark:text-gray-200 text-lg"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5, duration: 0.5 }}
-            >
-              Connect with the world to share your deep truths.
-            </motion.p>
-            <motion.p
-              className="text-gray-600 dark:text-gray-400"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.7, duration: 0.5 }}
-            >
-              Your voice matters. Your truth matters.
-            </motion.p>
-          </div>
+            <LogIn className="w-5 h-5" />
+            <span>Sign in with World ID</span>
+          </Button>
         </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.9, duration: 0.8 }}
-          className="space-y-4 pt-8"
-        >
-          <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-            <Button
-              onClick={() => router.push("/verify-self")}
-              className="w-full py-6 text-lg brutalist-button"
-            >
-              CONTINUE
-            </Button>
-          </motion.div>
-        </motion.div>
-      </motion.div>
+      </div>
     </div>
   );
 }
