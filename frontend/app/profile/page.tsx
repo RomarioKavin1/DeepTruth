@@ -10,7 +10,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import VideoThumbnail from "@/components/video-thumbnail";
 import VideoCard from "@/components/video-card";
 import { Video } from "@/types/video";
-import { signOut } from "next-auth/react";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -50,9 +49,7 @@ export default function ProfilePage() {
     setVideos(mockVideos);
   }, []);
 
-  const handleLogout = async () => {
-    await signOut({ redirect: true, callbackUrl: "/" });
-  };
+  const handleLogout = async () => {};
 
   return (
     <div className="flex flex-col h-full fixed inset-0 bg-[#f5f5f5] dark:bg-black">
