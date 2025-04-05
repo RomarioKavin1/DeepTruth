@@ -30,12 +30,13 @@ export async function POST(req: NextRequest) {
       status: "success",
       isValid: validMessage.isValid,
     });
-  } catch (error: any) {
+  } catch (error) {
     // Handle errors in validation or processing
     return NextResponse.json({
       status: "error",
       isValid: false,
-      message: error.message,
+      message:
+        error instanceof Error ? error.message : "An unknown error occurred",
     });
   }
 }

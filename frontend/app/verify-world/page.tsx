@@ -24,7 +24,7 @@ export default function VerifyWorldPage() {
       const res = await fetch(`/api/nonce`);
       const { nonce } = await res.json();
 
-      const { commandPayload: generateMessageResult, finalPayload } =
+      const { commandPayload: finalPayload } =
         await MiniKit.commandsAsync.walletAuth({
           nonce: nonce,
           requestId: "0",
@@ -36,7 +36,7 @@ export default function VerifyWorldPage() {
             "This is my statement and here is a link https://worldcoin.com/apps",
         });
 
-      if (finalPayload.status === "error") {
+      if (finalPayload?.siweMessage === "error") {
         toast.error("Error during wallet authentication");
         setIsLoading(false);
         return;
