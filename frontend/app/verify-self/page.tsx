@@ -14,7 +14,11 @@ import {
 } from "@worldcoin/minikit-js";
 import { Check } from "lucide-react";
 import { getUniversalLink, SelfAppBuilder } from "@selfxyz/core";
-
+interface IWorldProofData {
+  root: string;
+  nullifierHash: string;
+  proof: string;
+}
 export default function VerifySelfPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
@@ -36,7 +40,7 @@ export default function VerifySelfPage() {
   }).build();
   const deeplink = getUniversalLink(selfApp);
   // Mock data for proofs
-  const [worldProof, setWorldProof] = useState<string | null>(null);
+  const [worldProof, setWorldProof] = useState<IWorldProofData | null>(null);
   const [selfProof, setSelfProof] = useState<string | null>(null);
 
   const handleStep1 = async () => {
@@ -77,10 +81,14 @@ export default function VerifySelfPage() {
       });
 
       const verifyResponseJson = await verifyResponse.json();
-      console.log(verifyResponseJson);
+      console.log("verifyResponseJsonaaaaaaa");
 
       if (verifyResponseJson.success) {
-        setWorldProof(finalPayload.proof);
+        setWorldProof({
+          proof: finalPayload.proof,
+          nullifierHash: finalPayload.nullifier_hash,
+          root: finalPayload.merkle_root,
+        });
         setIsStep1Verified(true);
         toast.success("Humanity verified successfully");
         setCurrentStep(2);
@@ -113,7 +121,7 @@ export default function VerifySelfPage() {
 
       // Pass proofs as query parameters
       const queryParams = new URLSearchParams();
-      if (worldProof) queryParams.set("worldProof", worldProof);
+      if (worldProof) queryParams.set("worldProof", JSON.stringify(worldProof));
       if (selfProof) queryParams.set("selfProof", selfProof);
 
       router.push(`/verify-self/mint?${queryParams.toString()}`);
