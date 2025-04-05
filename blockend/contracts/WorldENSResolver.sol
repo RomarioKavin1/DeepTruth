@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import {ByteHasher} from "./helpers/ByteHasher.sol";
 import {IWorldID} from "./interfaces/IWorldID.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 import {StringUtils} from "@ensdomains/ens-contracts/contracts/utils/StringUtils.sol";
 
@@ -89,13 +90,14 @@ contract WorldENSResolver is IL2Registrar {
         address owner,
         uint256 root,
         uint256 nullifierHash,
-        uint256[8] calldata proof
+        uint256[8] calldata proof,
+        uint256 self_root
     ) external onlyOwner {
         _verifyAndExecute(owner, root, nullifierHash, proof);
-        _register(label, owner);
+        _register(label, owner, root, self_root);
     }
 
-    function _register(string calldata label, address owner) internal {
+    function _register(string calldata label, address owner, uint256 root,uint256 self_root) internal {
         bytes32 node = _labelToNode(label);
         bytes memory addr = abi.encodePacked(owner); // Convert address to bytes
 
@@ -103,9 +105,9 @@ contract WorldENSResolver is IL2Registrar {
 
         _registry.setAddr(node, 60, addr);
 
-        _registry.setText(node, "test", "test");
-
-
+        _registry.setText(node, "world_proof_root", Strings.toString(root));
+        _registry.setText(node, "self_proof_root", Strings.toString(self_root));
+        _registry.setText(node,"description","Check Keys world_proof_root and self_proof_root in the ENS record for proof of identity");
 
         _registry.createSubnode(
             _registry.baseNode(),

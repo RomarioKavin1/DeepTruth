@@ -26,7 +26,7 @@ export default function VerifySelfPage() {
     appName: "DeepTruth",
     scope: "Deep Name Minting",
     endpoint: url,
-    logoBase64: "",
+    logoBase64: "https://deep-truth.vercel.app/logo.png",
     userIdType: "hex",
     userId: worldAddress || "0x89c27f76EEF3e09D798FB06a66Dd461d7d21f111",
     disclosures: {

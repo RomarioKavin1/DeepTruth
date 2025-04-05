@@ -168,7 +168,7 @@ export default function VerifyWorldPage() {
               className="w-full py-6 text-lg brutalist-button"
               disabled={isLoading}
             >
-              {isLoading ? "VERIFYING..." : "VERIFY WITH WORLD ID"}
+              {isLoading ? "VERIFYING..." : "SIGN IN WITH WORLD ID"}
             </Button>
           </motion.div>
         </motion.div>

@@ -90,7 +90,7 @@ export default function OnboardingPage() {
             onClick={() => router.push("/verify-world")}
             className="w-full py-6 text-lg brutalist-button hover:scale-105 transition-all duration-300"
           >
-            VERIFY WITH WORLD
+            Launch Dapp
           </Button>
         </motion.div>
       </motion.div>
