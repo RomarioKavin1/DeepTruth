@@ -23,9 +23,9 @@ import {
 
 // Server URL for steganography API
 // Fix: Use the correct API endpoint with path
-// const SERVER_URL =
-//   process.env.NEXT_PUBLIC_SERVER_URL ||
-//   "https://d4eb-111-235-226-130.ngrok-free.app";
+const SERVER_URL =
+  process.env.NEXT_PUBLIC_SERVER_URL ||
+  "https://d4eb-111-235-226-130.ngrok-free.app";
 
 // Hardcoded secret message
 const HARDCODED_SECRET_MESSAGE = "abcdefghijklmnopqrstuvwxyz";
@@ -312,13 +312,10 @@ export default function CreatePage() {
 
     try {
       // Fixed API endpoint - explicitly include /encrypt path
-      const response = await fetch(
-        `https://d4eb-111-235-226-130.ngrok-free.app/encrypt`,
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
+      const response = await fetch(`${SERVER_URL}/encrypt`, {
+        method: "POST",
+        body: formData,
+      });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
