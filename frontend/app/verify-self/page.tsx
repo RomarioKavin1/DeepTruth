@@ -21,7 +21,7 @@ export default function VerifySelfPage() {
   const [isStep1Verified, setIsStep1Verified] = useState(false);
   const router = useRouter();
   const { worldAddress } = useEnvironmentStore((store) => store);
-  const url = "https://deep-truth.vercel.app/api/self";
+  const url = `${process.env.NEXT_PUBLIC_URL}/api/self`;
   const selfApp = new SelfAppBuilder({
     appName: "DeepTruth",
     scope: "Deep Name Minting",
@@ -118,7 +118,7 @@ export default function VerifySelfPage() {
 
       router.push(`/verify-self/mint?${queryParams.toString()}`);
     } catch (error) {
-      toast.error("Failed to verify name and age", {
+      toast.error("Failed to start Self verification", {
         description: error instanceof Error ? error.message : "Unknown error",
       });
     } finally {

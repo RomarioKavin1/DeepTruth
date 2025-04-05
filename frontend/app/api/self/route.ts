@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     // Extract user ID from the proof
     const userId = await getUserIdentifier(publicSignals);
     console.log("Extracted userId:", userId);
-    const url = "https://deep-truth.vercel.app/api/self";
+    const url = `${process.env.NEXT_PUBLIC_URL}/api/self`;
 
     // Initialize and configure the verifier
     const selfBackendVerifier = new SelfBackendVerifier(
