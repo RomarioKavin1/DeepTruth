@@ -45,7 +45,7 @@ export default function CreatePage() {
   const [videoMimeType, setVideoMimeType] = useState<string>("video/webm");
   const [uploadedVideoData, setUploadedVideoData] = useState<Blob | null>(null);
   const timerRef = useRef<NodeJS.Timeout>();
-
+  console.log(uploadedVideoData);
   // States for API integration and sharing
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
