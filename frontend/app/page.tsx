@@ -93,6 +93,23 @@ export default function OnboardingPage() {
             Launch Dapp
           </Button>
         </motion.div>
+        <motion.div
+          className="fixed bottom-4 right-4 z-50"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <Button
+            variant="outline"
+            size="sm"
+            className="brutalist-box bg-white dark:bg-black text-xs"
+            onClick={() => {
+              localStorage.setItem("offchainMode", "true");
+              router.push("/profile");
+            }}
+          >
+            Offchain Mode
+          </Button>
+        </motion.div>
       </motion.div>
     </div>
   );
