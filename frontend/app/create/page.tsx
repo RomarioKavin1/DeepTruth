@@ -22,9 +22,7 @@ import {
 } from "lucide-react";
 
 // Server URL for steganography API
-const SERVER_URL =
-  process.env.NEXT_PUBLIC_SERVER_URL ||
-  "https://ac10-111-235-226-130.ngrok-free.app";
+const SERVER_URL = "https://ac10-111-235-226-130.ngrok-free.app";
 
 // Hardcoded secret message
 const HARDCODED_SECRET_MESSAGE = "abcdefghijklmnopqrstuvwxyz";
