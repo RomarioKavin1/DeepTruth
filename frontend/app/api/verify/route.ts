@@ -9,7 +9,7 @@ interface IRequestPayload {
   payload: ISuccessResult;
   action: string;
   signal: string | undefined;
-  params: any;
+  params: unknown;
 }
 
 export async function POST(req: NextRequest) {
@@ -33,8 +33,6 @@ export async function POST(req: NextRequest) {
   console.log("Verify res");
   console.log(verifyRes);
   if (verifyRes.success) {
-    // This is where you should perform backend actions if the verification succeeds
-    // Such as, setting a user as "verified" in a database
     return NextResponse.json({
       success: {
         app_id,

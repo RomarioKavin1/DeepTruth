@@ -27,16 +27,15 @@ export default function VerifyWorldPage() {
       const { nonce } = await res.json();
 
       // Request wallet authentication
-      const { commandPayload: generateMessageResult, finalPayload } =
-        await MiniKit.commandsAsync.walletAuth({
-          nonce,
-          requestId: "0",
-          expirationTime: new Date(
-            new Date().getTime() + 7 * 24 * 60 * 60 * 1000
-          ),
-          notBefore: new Date(new Date().getTime() - 24 * 60 * 60 * 1000),
-          statement: "Verify your identity with Worldcoin",
-        });
+      const { finalPayload } = await MiniKit.commandsAsync.walletAuth({
+        nonce,
+        requestId: "0",
+        expirationTime: new Date(
+          new Date().getTime() + 7 * 24 * 60 * 60 * 1000
+        ),
+        notBefore: new Date(new Date().getTime() - 24 * 60 * 60 * 1000),
+        statement: "Verify your identity with Worldcoin",
+      });
 
       if (finalPayload.status === "error") {
         toast.error("Verification failed");
@@ -66,9 +65,13 @@ export default function VerifyWorldPage() {
       } else {
         toast.error(verifyData.message || "Verification failed");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Verification error:", error);
-      toast.error(error.message || "An error occurred during verification");
+      if (error instanceof Error) {
+        toast.error(error.message || "An error occurred during verification");
+      } else {
+        toast.error("An error occurred during verification");
+      }
     } finally {
       setIsLoading(false);
     }

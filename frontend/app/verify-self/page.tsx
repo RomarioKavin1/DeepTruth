@@ -74,9 +74,13 @@ export default function VerifySelfPage() {
         console.error("Verification failed:", verifyResponseJson.error);
         toast.error(verifyResponseJson.error || "Verification failed");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Verification error:", error);
-      toast.error(error.message || "An error occurred during verification");
+      if (error instanceof Error) {
+        toast.error(error.message || "An error occurred during verification");
+      } else {
+        toast.error("An error occurred during verification");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -97,7 +101,9 @@ export default function VerifySelfPage() {
 
       router.push(`/verify-self/mint?${queryParams.toString()}`);
     } catch (error) {
-      toast.error("Failed to verify name and age");
+      toast.error("Failed to verify name and age", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
     } finally {
       setIsLoading(false);
     }
