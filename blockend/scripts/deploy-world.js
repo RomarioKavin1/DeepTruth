@@ -15,19 +15,29 @@ async function main() {
   console.log(`Deploying to ${network}...`);
 
   const worldId = "0x17B354dD2595411ff79041f930e491A4Df39A278";
-  const appId = process.env.WORLD_APP_ID || "";
-  const actionId = "onboarding";
+  const appId = "app_8fc33d2a1f61cc65a02c3db25559bf25";
+  const actionId = "proof-of-humanity";
+  const inputRegistry = "0x2565b1f8bfd174d3acb67fd1a377b8014350dc26";
+  const owner = deployer.address;
 
   console.log({
     worldId,
     appId,
     actionId,
+    inputRegistry,
+    owner,
   });
 
   const WorldENSResolver = await hre.ethers.getContractFactory(
     "WorldENSResolver"
   );
-  const worldTesting = await WorldENSResolver.deploy(worldId, appId, actionId);
+  const worldTesting = await WorldENSResolver.deploy(
+    worldId,
+    appId,
+    actionId,
+    inputRegistry,
+    owner
+  );
 
   await worldTesting.waitForDeployment();
   const frankyAddress = await worldTesting.getAddress();
@@ -63,7 +73,7 @@ async function main() {
     try {
       await hre.run("verify:verify", {
         address: frankyAddress,
-        constructorArguments: [worldId, appId, actionId],
+        constructorArguments: [worldId, appId, actionId, inputRegistry, owner],
       });
       console.log("Contract verified successfully");
     } catch (error) {
