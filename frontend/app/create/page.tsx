@@ -23,9 +23,9 @@ import {
 
 // Server URL for steganography API
 // Fix: Use the correct API endpoint with path
-const SERVER_URL =
-  process.env.NEXT_PUBLIC_SERVER_URL ||
-  "https://d4eb-111-235-226-130.ngrok-free.app";
+// const SERVER_URL =
+//   process.env.NEXT_PUBLIC_SERVER_URL ||
+//   "https://d4eb-111-235-226-130.ngrok-free.app";
 
 // Hardcoded secret message
 const HARDCODED_SECRET_MESSAGE = "abcdefghijklmnopqrstuvwxyz";
