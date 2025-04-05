@@ -55,14 +55,26 @@ export default function MintPage() {
   }, []);
 
   const handleMint = async () => {
-    setIsLoading(true);
+    if (!selfData || !worldIdData) return;
+
     try {
-      // Minting logic will be integrated here
-      console.log("Minting DeepName with data:", selfData, worldIdData);
-      // For now, just redirect to the profile page
+      setIsLoading(true);
+      // Here you would call your contract function with the data
+      console.log("Contract function call data:", {
+        // Self data
+        label: selfData.label,
+        self_root: selfData.self_root,
+
+        // World ID data
+        root: worldIdData.root,
+        nullifierHash: worldIdData.nullifierHash,
+        proof: worldIdData.proof,
+      });
+
+      // After successful mint, redirect to profile
       router.push("/profile");
     } catch (error) {
-      console.error("Error minting DeepName:", error);
+      console.error("Minting error:", error);
     } finally {
       setIsLoading(false);
     }
@@ -78,56 +90,59 @@ export default function MintPage() {
       >
         <div className="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
           <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-6">
-            Verification Data
+            Verification Data for Contract Call
           </h2>
 
           {!isLoading && (selfData || worldIdData) ? (
             <div className="space-y-6">
-              {selfData && (
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-                    Self Verification Data
-                  </h3>
-                  <div className="mt-2 space-y-2">
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      <span className="font-medium">Label:</span>{" "}
-                      {selfData.label}
-                    </p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      <span className="font-medium">Self Root:</span>{" "}
-                      {selfData.self_root}
-                    </p>
+              <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
+                  Contract Function Parameters
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+                      Self Data
+                    </h4>
+                    <div className="font-mono text-sm bg-gray-100 dark:bg-gray-800 p-3 rounded">
+                      <p>label: "{selfData?.label}"</p>
+                      <p>self_root: "{selfData?.self_root}"</p>
+                    </div>
                   </div>
-                </div>
-              )}
 
-              {worldIdData && (
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-                    World ID Proof Data
-                  </h3>
-                  <div className="mt-2 space-y-2">
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      <span className="font-medium">Root:</span>{" "}
-                      {worldIdData.root}
-                    </p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      <span className="font-medium">Nullifier Hash:</span>{" "}
-                      {worldIdData.nullifierHash}
-                    </p>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                      <span className="font-medium">Proof:</span>
-                      <div className="mt-1 font-mono text-xs break-all">
-                        {worldIdData.proof.map((p, i) => (
-                          <p key={i} className="truncate">
-                            {p}
-                          </p>
-                        ))}
-                      </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+                      World ID Data
+                    </h4>
+                    <div className="font-mono text-sm bg-gray-100 dark:bg-gray-800 p-3 rounded">
+                      <p>root: "{worldIdData?.root}"</p>
+                      <p>nullifierHash: "{worldIdData?.nullifierHash}"</p>
+                      <p>proof: [</p>
+                      {worldIdData?.proof.map((p, i) => (
+                        <p key={i} className="ml-4">
+                          "{p}"{i < worldIdData.proof.length - 1 ? "," : ""}
+                        </p>
+                      ))}
+                      <p>]</p>
                     </div>
                   </div>
                 </div>
-              )}
+              </div>
+
+              <Button
+                onClick={handleMint}
+                className="w-full py-6 text-lg"
+                disabled={isLoading || !selfData || !worldIdData}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                    Minting...
+                  </>
+                ) : (
+                  "Mint DeepName"
+                )}
+              </Button>
             </div>
           ) : (
             <div className="flex items-center justify-center">
@@ -136,30 +151,6 @@ export default function MintPage() {
             </div>
           )}
         </div>
-      </motion.div>
-
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.9, duration: 0.8 }}
-        className="space-y-4 pt-8"
-      >
-        <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-          <Button
-            onClick={handleMint}
-            className="w-full py-6 text-lg brutalist-button"
-            disabled={isLoading || !selfData || !worldIdData}
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-6 w-6 animate-spin" />
-                MINTING...
-              </>
-            ) : (
-              "MINT DEEPNAME"
-            )}
-          </Button>
-        </motion.div>
       </motion.div>
     </div>
   );
