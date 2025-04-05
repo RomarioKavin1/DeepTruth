@@ -21,7 +21,7 @@ export default function VerifySelfPage() {
   const [isStep1Verified, setIsStep1Verified] = useState(false);
   const router = useRouter();
   const { worldAddress } = useEnvironmentStore((store) => store);
-  const url = "https://cd2f-111-235-226-130.ngrok-free.app/api/self";
+  const url = "https://8335-111-235-226-130.ngrok-free.app/api/self";
   const selfApp = new SelfAppBuilder({
     appName: "DeepTruth",
     scope: "Deep Name Minting",

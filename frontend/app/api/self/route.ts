@@ -1,9 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  getUserIdentifier,
-  SelfBackendVerifier,
-  countryCodes,
-} from "@selfxyz/core";
+import { getUserIdentifier, SelfBackendVerifier } from "@selfxyz/core";
 
 export async function POST(req: NextRequest) {
   try {
@@ -55,11 +51,11 @@ export async function POST(req: NextRequest) {
         { status: 500 }
       );
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error("Self verification error:", error);
     return NextResponse.json({
       success: false,
-      error: error.message || "Internal server error",
+      error: error instanceof Error ? error.message : "Internal server error",
       status: 500,
     });
   }

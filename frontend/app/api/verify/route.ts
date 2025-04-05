@@ -55,11 +55,11 @@ export async function POST(req: NextRequest) {
         status: 400,
       });
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error("Verification error:", error);
     return NextResponse.json({
       success: false,
-      error: error.message || "Internal server error",
+      error: error instanceof Error ? error.message : "Internal server error",
       status: 500,
     });
   }
