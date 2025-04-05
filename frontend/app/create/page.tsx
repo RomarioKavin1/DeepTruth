@@ -22,7 +22,10 @@ import {
 } from "lucide-react";
 
 // Server URL for steganography API
-const SERVER_URL = "https://ac10-111-235-226-130.ngrok-free.app";
+// Fix: Use the correct API endpoint with path
+const SERVER_URL =
+  process.env.NEXT_PUBLIC_SERVER_URL ||
+  "https://d4eb-111-235-226-130.ngrok-free.app";
 
 // Hardcoded secret message
 const HARDCODED_SECRET_MESSAGE = "abcdefghijklmnopqrstuvwxyz";
@@ -48,7 +51,7 @@ export default function CreatePage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [showShareOptions, setShowShareOptions] = useState(false);
   const [videoTitle, setVideoTitle] = useState("My Deep Truth");
-  console.log(uploadedVideoData);
+
   // Steganography specific states
   const [encryptedVideoData, setEncryptedVideoData] = useState<{
     mp4: string;
@@ -308,7 +311,7 @@ export default function CreatePage() {
     });
 
     try {
-      // Call the steganography API endpoint
+      // Fixed API endpoint - explicitly include /encrypt path
       const response = await fetch(`${SERVER_URL}/encrypt`, {
         method: "POST",
         body: formData,
@@ -321,6 +324,7 @@ export default function CreatePage() {
 
       // Get response with video formats
       const result = await response.json();
+      console.log("API response:", result);
 
       // Set upload to complete
       setUploadProgress(100);
