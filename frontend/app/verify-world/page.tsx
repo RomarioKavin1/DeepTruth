@@ -62,7 +62,7 @@ export default function VerifyWorldPage() {
 
       if (verifyData.status === "success" && verifyData.isValid) {
         toast.success("Successfully verified with Worldcoin");
-        router.push("/profile");
+        router.push("/verify-self");
       } else {
         toast.error(verifyData.message || "Verification failed");
       }
@@ -75,29 +75,101 @@ export default function VerifyWorldPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="container mx-auto px-4 py-16">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="max-w-2xl mx-auto text-center"
-        >
-          <h1 className="text-4xl font-bold mb-6">Verify with Worldcoin</h1>
-          <p className="text-lg text-muted-foreground mb-8">
-            Connect your Worldcoin wallet to verify your identity
-          </p>
+    <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-[#f5f5f5] dark:bg-black relative overflow-hidden">
+      {/* Background elements */}
+      <motion.div
+        className="absolute top-10 left-10 w-20 h-20 bg-[#10b981] rounded-full opacity-20"
+        animate={{
+          x: [0, 30, 0],
+          y: [0, -30, 0],
+          scale: [1, 1.2, 1],
+        }}
+        transition={{
+          repeat: Infinity,
+          duration: 15,
+          ease: "easeInOut",
+        }}
+      />
+      <motion.div
+        className="absolute bottom-20 right-10 w-32 h-32 bg-[#10b981] rounded-full opacity-20"
+        animate={{
+          x: [0, -40, 0],
+          y: [0, 40, 0],
+          scale: [1, 1.3, 1],
+        }}
+        transition={{
+          repeat: Infinity,
+          duration: 20,
+          ease: "easeInOut",
+        }}
+      />
+      <motion.div
+        className="absolute top-1/2 left-1/4 w-16 h-16 bg-[#10b981] opacity-10"
+        animate={{
+          rotate: [0, 180, 360],
+          scale: [1, 1.2, 1],
+        }}
+        transition={{
+          repeat: Infinity,
+          duration: 25,
+          ease: "linear",
+        }}
+      />
 
-          <Button
-            size="lg"
-            className="w-full max-w-md mx-auto"
-            onClick={handleVerify}
-            disabled={isLoading}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8 }}
+        className="w-full max-w-md text-center space-y-8 z-10"
+      >
+        <motion.div
+          initial={{ scale: 0.9 }}
+          animate={{ scale: 1 }}
+          transition={{
+            type: "spring",
+            stiffness: 260,
+            damping: 20,
+          }}
+          className="brutalist-box p-8 bg-white dark:bg-black"
+        >
+          <motion.h1
+            className="text-4xl font-bold tracking-tight text-black dark:text-white mb-6"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
           >
-            {isLoading ? "Verifying..." : "Verify with Worldcoin"}
-          </Button>
+            PROOF OF <span className="text-[#10b981]">HUMANITY</span>
+          </motion.h1>
+
+          <div className="space-y-4">
+            <motion.p
+              className="text-gray-800 dark:text-gray-200 text-lg"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5, duration: 0.5 }}
+            >
+              Verify your humanity using World ID
+            </motion.p>
+          </div>
         </motion.div>
-      </div>
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.9, duration: 0.8 }}
+          className="space-y-4 pt-8"
+        >
+          <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+            <Button
+              onClick={handleVerify}
+              className="w-full py-6 text-lg brutalist-button"
+              disabled={isLoading}
+            >
+              {isLoading ? "VERIFYING..." : "VERIFY WITH WORLD ID"}
+            </Button>
+          </motion.div>
+        </motion.div>
+      </motion.div>
     </div>
   );
 }
