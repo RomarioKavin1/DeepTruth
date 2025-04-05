@@ -8,10 +8,11 @@ import { useRouter } from "next/navigation";
 import { ethers } from "ethers";
 import { WorldENSResolverABI } from "@/constants/abi";
 import { toast } from "sonner";
+import { MiniKit } from "@worldcoin/minikit-js";
 
 const CONTRACT_ADDRESS = "0x3Df0C30a02221FAb4fbdE6Ae7dd288F00F563bBF";
-const WORLDCHAIN_MAINNET_RPC = "https://rpc.worldcoin.org";
-const EXPLORER_URL = "https://explorer.worldcoin.org/tx/";
+const WORLDCHAIN_MAINNET_RPC = "https://worldchain.drpc.org";
+const EXPLORER_URL = "https://worldscan.org/tx/";
 
 interface SelfVerificationData {
   label: string;
@@ -33,50 +34,170 @@ export default function MintPage() {
   const [selfData, setSelfData] = useState<SelfVerificationData | null>(null);
   const [worldIdData, setWorldIdData] =
     useState<WorldIdVerificationData | null>(null);
+  const [errorDetails, setErrorDetails] = useState<string | null>(null);
   const router = useRouter();
 
+  // FOR TESTING: Use URL query parameters if available
   useEffect(() => {
-    const fetchVerificationData = async () => {
-      try {
-        setIsLoading(true);
+    const urlParams = new URLSearchParams(window.location.search);
+    const label = urlParams.get("label");
+    const self_root = urlParams.get("self_root");
+    const root = urlParams.get("root");
+    const nullifierHash = urlParams.get("nullifierHash");
 
-        // Fetch Self verification data
-        const selfResponse = await fetch("/api/self/status");
-        const selfResult = await selfResponse.json();
+    // Check if we have proof parameters
+    const proofParams = [];
+    for (let i = 0; i < 8; i++) {
+      const proofValue = urlParams.get(`proof${i}`);
+      if (proofValue) {
+        proofParams.push(proofValue);
+      }
+    }
 
-        if (selfResult.success) {
-          setSelfData(selfResult.data);
-        } else {
-          toast.error("Failed to fetch Self verification data");
+    // If we have all params from the URL, set them directly
+    if (label && self_root && root && nullifierHash && proofParams.length > 0) {
+      toast.info("Using URL parameters for verification data");
+
+      setSelfData({
+        label,
+        self_root,
+      });
+
+      setWorldIdData({
+        root,
+        nullifierHash,
+        proof: proofParams,
+      });
+    } else {
+      // Otherwise fetch from API
+      fetchVerificationData();
+    }
+  }, []);
+
+  const fetchVerificationData = async () => {
+    try {
+      setIsLoading(true);
+      toast.loading("Fetching verification data...");
+
+      // Fetch Self verification data
+      const selfResponse = await fetch("/api/self/status");
+      const selfResult = await selfResponse.json();
+
+      if (selfResult.success) {
+        setSelfData(selfResult.data);
+      } else {
+        toast.error("Failed to fetch Self verification data");
+        // Don't redirect immediately, allow other fallbacks to try
+      }
+
+      // Fetch World ID verification data
+      const worldIdResponse = await fetch("/api/worldid/status");
+      const worldIdResult = await worldIdResponse.json();
+
+      if (worldIdResult.success) {
+        setWorldIdData(worldIdResult.data);
+      } else {
+        toast.error("Failed to fetch World ID verification data");
+        // Don't redirect immediately, allow other fallbacks to try
+      }
+
+      // If both failed, try alternate data source
+      if (!selfResult.success && !worldIdResult.success) {
+        toast.loading("Trying alternate data source...");
+        // Try localStorage if available
+        try {
+          const storedData = localStorage.getItem("deepNameMintData");
+          if (storedData) {
+            const parsedData = JSON.parse(storedData);
+
+            setSelfData({
+              label: parsedData.label,
+              self_root: parsedData.self_root,
+            });
+
+            setWorldIdData({
+              root: parsedData.root,
+              nullifierHash: parsedData.nullifierHash,
+              proof: parsedData.proof,
+            });
+
+            toast.success("Retrieved data from local storage");
+          } else {
+            // Redirect if no data is available
+            toast.error("No verification data found");
+            router.push("/verify-self");
+          }
+        } catch (error) {
+          console.error("Local storage access error:", error);
+          // Redirect as last resort
           router.push("/verify-self");
         }
-
-        // Fetch World ID verification data
-        const worldIdResponse = await fetch("/api/worldid/status");
-        const worldIdResult = await worldIdResponse.json();
-
-        if (worldIdResult.success) {
-          setWorldIdData(worldIdResult.data);
-        } else {
-          toast.error("Failed to fetch World ID verification data");
-          router.push("/verify-world");
-        }
-      } catch (error) {
-        console.error("Error fetching verification data:", error);
-        toast.error("Failed to fetch verification data");
-      } finally {
-        setIsLoading(false);
       }
-    };
+    } catch (error) {
+      console.error("Error fetching verification data:", error);
+      toast.error("Failed to fetch verification data");
+    } finally {
+      setIsLoading(false);
+      toast.dismiss();
+    }
+  };
 
-    fetchVerificationData();
-  }, [router]);
+  // Add this function before handleMint
+  const splitProofIntoUint256Array = (proofString: string) => {
+    if (!proofString) return Array(8).fill(BigInt(0));
 
+    // Remove 0x prefix if present
+    const cleanProof = proofString.startsWith("0x")
+      ? proofString.slice(2)
+      : proofString;
+
+    // The proof should be split into 8 equal parts
+    // Each uint256 value is 64 characters (32 bytes) in hex
+    const segmentLength = 64;
+    const result = [];
+
+    // Create 8 segments
+    for (let i = 0; i < 8; i++) {
+      // Calculate start position
+      const start = i * segmentLength;
+
+      // If we have data for this segment, use it; otherwise use 0
+      if (start < cleanProof.length) {
+        // Get up to 64 characters
+        const end = Math.min(start + segmentLength, cleanProof.length);
+        const segment = cleanProof.slice(start, end);
+
+        // Pad with zeros if less than 64 characters
+        const paddedSegment = segment.padEnd(segmentLength, "0");
+
+        // Convert to BigInt
+        try {
+          result.push(BigInt("0x" + paddedSegment));
+        } catch (e) {
+          console.warn(`Failed to convert segment ${i} to BigInt, using 0`);
+          result.push(BigInt(0));
+        }
+      } else {
+        // If no data for this segment, use 0
+        result.push(BigInt(0));
+      }
+    }
+
+    return result;
+  };
+
+  // Update the proof handling in handleMint
   const handleMint = async () => {
-    if (!selfData || !worldIdData) return;
+    if (!selfData || !worldIdData) {
+      toast.error("Missing verification data", {
+        description: "Please complete all verification steps first.",
+      });
+      return;
+    }
 
     try {
       setIsMinting(true);
+      setErrorDetails(null);
       toast.loading("Starting minting process...");
 
       // Get the first two names for the label
@@ -87,52 +208,159 @@ export default function MintPage() {
         .toLowerCase();
       setMintedName(`${label}.deeptruth.eth`);
 
-      // Connect to Worldchain
-      const provider = new ethers.JsonRpcProvider(WORLDCHAIN_MAINNET_RPC);
-      const wallet = new ethers.Wallet(
-        process.env.NEXT_PUBLIC_PRIVATE_KEY!,
-        provider
-      );
+      // Check for owner address
+      const ownerAddress = "0x4774b9621102eac2254365f9311c4e7700d9e7de";
+      if (!ownerAddress) {
+        console.error("Owner address is null or undefined");
+        setErrorDetails(
+          "Missing wallet address from World App. Please try reconnecting."
+        );
+        toast.error("Missing wallet address");
+        setIsMinting(false);
+        return;
+      }
+
+      // Validate address format
+      if (!ethers.isAddress(ownerAddress)) {
+        console.error("Invalid owner address format:", ownerAddress);
+        setErrorDetails(`Invalid wallet address format: ${ownerAddress}`);
+        toast.error("Invalid wallet address format");
+        setIsMinting(false);
+        return;
+      }
+
+      // Try to connect to Worldchain
+      let provider;
+      try {
+        provider = new ethers.JsonRpcProvider(WORLDCHAIN_MAINNET_RPC);
+        await provider.getNetwork(); // Test the connection
+      } catch (providerError) {
+        console.error("Provider connection error:", providerError);
+        setErrorDetails(
+          "Failed to connect to Worldchain RPC. Please try again later."
+        );
+        toast.error("Blockchain connection error");
+        setIsMinting(false);
+        return;
+      }
+
+      // Get the private key from env
+      const privateKey = process.env.NEXT_PUBLIC_PRIVATE_KEY;
+      if (!privateKey) {
+        console.error("Private key not found in environment variables");
+        setErrorDetails(
+          "Contract wallet configuration error. Please contact support."
+        );
+        toast.error("Configuration error");
+        setIsMinting(false);
+        return;
+      }
+
+      // Create wallet instance
+      const wallet = new ethers.Wallet(privateKey, provider);
+      console.log("Using wallet address for minting:", wallet.address);
+
+      // Create contract instance
       const contract = new ethers.Contract(
         CONTRACT_ADDRESS,
         WorldENSResolverABI,
         wallet
       );
 
-      // Convert proof to uint256[8]
-      const proofArray = worldIdData.proof.map((p) => BigInt(p));
-      while (proofArray.length < 8) proofArray.push(BigInt(0));
+      // Convert and validate proof elements
+      try {
+        // Convert proof to uint256[8] using the new function
+        const proofArray = splitProofIntoUint256Array(worldIdData.proof[0]);
+        console.log("Proof array:", proofArray);
 
-      toast.loading("Sending transaction...");
+        // Validate root and nullifierHash
+        if (!worldIdData.root) throw new Error("World ID root is null");
+        if (!worldIdData.nullifierHash)
+          throw new Error("NullifierHash is null");
+        if (!selfData.self_root) throw new Error("Self root is null");
 
-      // Call registerWithProof
-      const tx = await contract.registerWithProof(
-        label,
-        wallet.address,
-        BigInt(worldIdData.root),
-        BigInt(worldIdData.nullifierHash),
-        proofArray,
-        BigInt(selfData.self_root)
-      );
+        toast.loading("Sending transaction to blockchain...");
 
-      setTxHash(tx.hash);
-      toast.loading("Waiting for transaction confirmation...");
+        // Log the exact parameters we're sending to the contract
+        console.log("Calling registerWithProof with:", {
+          label,
+          owner: ownerAddress,
+          root: worldIdData.root,
+          nullifierHash: worldIdData.nullifierHash,
+          proofLength: proofArray.length,
+          self_root: selfData.self_root,
+        });
 
-      // Wait for transaction to be mined
-      await tx.wait();
+        // Call registerWithProof with explicit type conversions
+        const tx = await contract.registerWithProof(
+          label,
+          ownerAddress,
+          BigInt(worldIdData.root),
+          BigInt(worldIdData.nullifierHash),
+          proofArray,
+          BigInt(selfData.self_root),
+          {
+            gasLimit: 1000000,
+          }
+        );
 
-      toast.success("Name minted successfully!");
-      setIsSuccess(true);
+        console.log("Transaction sent:", tx.hash);
+        setTxHash(tx.hash);
+        toast.loading("Waiting for transaction confirmation...");
 
-      // Redirect to profile after 3 seconds
-      setTimeout(() => {
-        router.push("/profile");
-      }, 3000);
+        // Wait for transaction to be mined
+        const receipt = await tx.wait();
+        console.log("Transaction confirmed!", receipt);
+
+        toast.success("Name minted successfully!");
+        setIsSuccess(true);
+
+        // Clear any stored data
+        try {
+          localStorage.removeItem("deepNameMintData");
+        } catch (e) {
+          // Ignore localStorage errors
+        }
+
+        // Redirect to profile after 3 seconds
+        setTimeout(() => {
+          router.push("/profile");
+        }, 3000);
+      } catch (validationError: any) {
+        console.error("Data validation error:", validationError);
+        setErrorDetails(`Validation error: ${validationError.message}`);
+        toast.error("Data validation error");
+        setIsMinting(false);
+        return;
+      }
     } catch (error) {
       console.error("Minting error:", error);
-      toast.error("Failed to mint name. Please try again.");
+
+      // Determine error message based on the error
+      let errorMessage = "Failed to mint name. Please try again.";
+      if (error instanceof Error) {
+        setErrorDetails(error.message);
+
+        if (error.message.includes("user rejected")) {
+          errorMessage = "Transaction was rejected.";
+        } else if (error.message.includes("insufficient funds")) {
+          errorMessage = "Insufficient funds for transaction.";
+        } else if (error.message.includes("gas")) {
+          errorMessage = "Gas estimation failed. The transaction may fail.";
+        } else if (error.message.includes("nonce")) {
+          errorMessage = "Nonce error. Please refresh and try again.";
+        } else if (
+          error.message.includes("null") ||
+          error.message.includes("undefined")
+        ) {
+          errorMessage = "Missing required data. Please check all parameters.";
+        }
+      }
+
+      toast.error(errorMessage);
     } finally {
       setIsMinting(false);
+      toast.dismiss();
     }
   };
 
@@ -258,6 +486,114 @@ export default function MintPage() {
                 exit={{ opacity: 0 }}
                 className="space-y-6"
               >
+                {/* Debug Parameters Box */}
+                <div className="mt-4 mb-2 border border-gray-300 dark:border-gray-700 rounded-md overflow-hidden">
+                  <details className="group">
+                    <summary className="flex items-center justify-between p-3 bg-gray-100 dark:bg-gray-800 cursor-pointer">
+                      <span className="font-medium text-sm text-gray-700 dark:text-gray-300">
+                        Debug Parameters
+                      </span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400 group-open:hidden">
+                        Click to expand
+                      </span>
+                    </summary>
+                    <div className="p-3 bg-white dark:bg-gray-900 text-xs">
+                      <div className="space-y-2 font-mono text-left">
+                        <div className="grid grid-cols-[auto_1fr] gap-x-2">
+                          <span className="font-bold text-gray-500 dark:text-gray-400">
+                            Label:
+                          </span>
+                          <span className="truncate">
+                            {selfData?.label || "N/A"}
+                          </span>
+
+                          <span className="font-bold text-gray-500 dark:text-gray-400">
+                            Owner:
+                          </span>
+                          <span className="truncate">
+                            {MiniKit.user?.walletAddress || "N/A"}
+                          </span>
+
+                          <span className="font-bold text-gray-500 dark:text-gray-400">
+                            Root:
+                          </span>
+                          <span className="truncate">
+                            {worldIdData?.root || "N/A"}
+                          </span>
+
+                          <span className="font-bold text-gray-500 dark:text-gray-400">
+                            NullifierHash:
+                          </span>
+                          <span className="truncate">
+                            {worldIdData?.nullifierHash || "N/A"}
+                          </span>
+
+                          <span className="font-bold text-gray-500 dark:text-gray-400">
+                            Self Root:
+                          </span>
+                          <span className="truncate">
+                            {selfData?.self_root || "N/A"}
+                          </span>
+                        </div>
+
+                        <div>
+                          <span className="font-bold text-gray-500 dark:text-gray-400">
+                            Proof Array:
+                          </span>
+                          <div className="mt-1 pl-2 space-y-1 max-h-32 overflow-y-auto">
+                            {worldIdData?.proof ? (
+                              worldIdData.proof.map((item, idx) => (
+                                <div
+                                  key={idx}
+                                  className="grid grid-cols-[2rem_1fr] gap-1"
+                                >
+                                  <span className="text-gray-500">
+                                    [{idx}]:
+                                  </span>
+                                  <span className="truncate">{item}</span>
+                                </div>
+                              ))
+                            ) : (
+                              <span className="text-gray-500">
+                                No proof data available
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-800">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              try {
+                                // Try to copy all params to clipboard
+                                const params = {
+                                  label: selfData?.label,
+                                  owner:
+                                    "0x4774b9621102eac2254365f9311c4e7700d9e7de",
+                                  root: worldIdData?.root,
+                                  nullifierHash: worldIdData?.nullifierHash,
+                                  self_root: selfData?.self_root,
+                                  proof: worldIdData?.proof,
+                                };
+                                navigator.clipboard.writeText(
+                                  JSON.stringify(params, null, 2)
+                                );
+                                toast.success("Copied parameters to clipboard");
+                              } catch (e) {
+                                toast.error("Failed to copy parameters");
+                                console.error(e);
+                              }
+                            }}
+                            className="text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
+                          >
+                            Copy to clipboard
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </details>
+                </div>
                 <motion.h1
                   className="text-4xl font-bold tracking-tight text-black dark:text-white mb-6"
                   initial={{ opacity: 0, y: 10 }}
@@ -266,7 +602,6 @@ export default function MintPage() {
                 >
                   MINT YOUR <span className="text-[#10b981]">DEEPNAME</span>
                 </motion.h1>
-
                 {!isLoading && selfData ? (
                   <div className="space-y-6">
                     <motion.div
@@ -288,6 +623,28 @@ export default function MintPage() {
                       </p>
                     </motion.div>
 
+                    {/* Status display */}
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      <div className="flex items-center justify-center space-x-2">
+                        <div
+                          className={`w-2 h-2 rounded-full ${
+                            selfData ? "bg-green-500" : "bg-red-500"
+                          }`}
+                        ></div>
+                        <p>Self data: {selfData ? "Ready" : "Missing"}</p>
+                      </div>
+                      <div className="flex items-center justify-center space-x-2 mt-1">
+                        <div
+                          className={`w-2 h-2 rounded-full ${
+                            worldIdData ? "bg-green-500" : "bg-red-500"
+                          }`}
+                        ></div>
+                        <p>
+                          World ID data: {worldIdData ? "Ready" : "Missing"}
+                        </p>
+                      </div>
+                    </div>
+
                     {isMinting && (
                       <motion.div
                         initial={{ opacity: 0 }}
@@ -295,16 +652,31 @@ export default function MintPage() {
                         className="text-center text-gray-600 dark:text-gray-400"
                       >
                         <p>Transaction Hash:</p>
-                        <a
-                          href={`${EXPLORER_URL}${txHash}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center justify-center gap-2 hover:text-[#10b981] transition-colors"
-                        >
-                          {txHash.slice(0, 6)}...{txHash.slice(-4)}{" "}
-                          <ExternalLink className="h-4 w-4" />
-                        </a>
+                        {txHash ? (
+                          <a
+                            href={`${EXPLORER_URL}${txHash}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-center gap-2 hover:text-[#10b981] transition-colors"
+                          >
+                            {txHash.slice(0, 6)}...{txHash.slice(-4)}{" "}
+                            <ExternalLink className="h-4 w-4" />
+                          </a>
+                        ) : (
+                          <p className="text-sm italic">
+                            Preparing transaction...
+                          </p>
+                        )}
                       </motion.div>
+                    )}
+
+                    {/* Error details */}
+                    {errorDetails && (
+                      <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 rounded-md">
+                        <p className="text-sm text-red-600 dark:text-red-400">
+                          Error: {errorDetails}
+                        </p>
+                      </div>
                     )}
 
                     <motion.div
@@ -338,6 +710,36 @@ export default function MintPage() {
                           )}
                         </Button>
                       </motion.div>
+
+                      {/* Debug button for development only - remove in production */}
+                      <div className="text-xs text-gray-500">
+                        <button
+                          onClick={() => {
+                            if (selfData && worldIdData) {
+                              console.log("Self data:", selfData);
+                              console.log("World ID data:", worldIdData);
+                              alert(
+                                `Debug: Data loaded\nLabel: ${
+                                  selfData.label
+                                }\nSelf root: ${selfData.self_root.substring(
+                                  0,
+                                  10
+                                )}...\nWorld root: ${worldIdData.root.substring(
+                                  0,
+                                  10
+                                )}...\nProof elements: ${
+                                  worldIdData.proof.length
+                                }`
+                              );
+                            } else {
+                              alert("Missing verification data");
+                            }
+                          }}
+                          className="underline"
+                        >
+                          Debug info
+                        </button>
+                      </div>
                     </motion.div>
                   </div>
                 ) : (
