@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserIdentifier, SelfBackendVerifier } from "@selfxyz/core";
+import { storeVerificationData } from "./db";
 
 export async function POST(req: NextRequest) {
   try {
@@ -32,31 +33,49 @@ export async function POST(req: NextRequest) {
     // Verify the proof
     const result = await selfBackendVerifier.verify(proof, publicSignals);
     console.log("Verification result:", result);
+
     if (result.isValid) {
-      // Return successful verification response
+      // Store Self verification data locally
+      const name = Array.isArray(result.credentialSubject?.name)
+        ? result.credentialSubject.name.join(" ")
+        : "";
+      const merkleRoot = result.credentialSubject?.merkle_root || "0";
+
+      const verificationData = {
+        label: name,
+        self_root: merkleRoot,
+        userId: userId,
+      };
+
+      console.log("Storing Self verification data:", verificationData);
+      try {
+        storeVerificationData(verificationData);
+        console.log("Successfully stored verification data");
+      } catch (error) {
+        console.error("Error storing verification data:", error);
+        throw error;
+      }
+
+      // Return success response
       return NextResponse.json({
         status: "success",
-        result: result.isValid,
+        result: true,
         credentialSubject: result.credentialSubject,
       });
     } else {
-      // Return failed verification response
-      return NextResponse.json(
-        {
-          status: "error",
-          result: false,
-          message: "Verification failed",
-          details: result.isValidDetails,
-        },
-        { status: 500 }
-      );
+      console.log("Verification failed");
+      return NextResponse.json({
+        status: "error",
+        result: false,
+        error: "Verification failed",
+      });
     }
   } catch (error) {
-    console.error("Self verification error:", error);
+    console.error("Error in Self verification:", error);
     return NextResponse.json({
-      success: false,
+      status: "error",
+      result: false,
       error: error instanceof Error ? error.message : "Internal server error",
-      status: 500,
     });
   }
 }

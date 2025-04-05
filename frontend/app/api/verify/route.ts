@@ -4,6 +4,7 @@ import {
   IVerifyResponse,
   ISuccessResult,
 } from "@worldcoin/minikit-js";
+import { storeWorldIdVerificationData } from "../worldid/db";
 
 interface IRequestPayload {
   payload: ISuccessResult;
@@ -34,14 +35,14 @@ export async function POST(req: NextRequest) {
     console.log("Verification result:", verifyRes);
 
     if (verifyRes.success) {
-      console.log("World ID Proof Details:", {
+      const worldIdData = {
         root: payload.merkle_root,
-        groupId: payload.nullifier_hash,
-        signalHash: signal,
         nullifierHash: payload.nullifier_hash,
-        externalNullifierHash: action,
-        proof: payload.proof,
-      });
+        proof: Array.isArray(payload.proof) ? payload.proof : [payload.proof],
+      };
+
+      console.log("Storing World ID Proof Details:", worldIdData);
+      storeWorldIdVerificationData(worldIdData);
 
       return NextResponse.json({
         success: true,
