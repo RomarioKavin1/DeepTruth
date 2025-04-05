@@ -6,10 +6,18 @@ import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useEnvironmentStore } from "@/components/providers/context";
+import {
+  MiniKit,
+  VerifyCommandInput,
+  VerificationLevel,
+  ISuccessResult,
+} from "@worldcoin/minikit-js";
+import { Check } from "lucide-react";
 
 export default function VerifySelfPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [isStep1Verified, setIsStep1Verified] = useState(false);
   const router = useRouter();
   const { worldAddress } = useEnvironmentStore((store) => store);
 
@@ -20,13 +28,55 @@ export default function VerifySelfPage() {
   const handleStep1 = async () => {
     try {
       setIsLoading(true);
-      // Mock verification process
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      setWorldProof("mock_world_proof_123");
-      toast.success("Humanity verified successfully");
-      setCurrentStep(2);
-    } catch (error) {
-      toast.error("Failed to verify humanity");
+
+      if (!MiniKit.isInstalled()) {
+        toast.error("World App is not installed");
+        return;
+      }
+
+      const verifyPayload: VerifyCommandInput = {
+        action: "proof-of-humanity", // This should match your action ID from the Developer Portal
+        signal: worldAddress || undefined, // Using the wallet address as the signal
+        verification_level: VerificationLevel.Orb,
+      };
+
+      const { finalPayload } = await MiniKit.commandsAsync.verify(
+        verifyPayload
+      );
+
+      if (finalPayload.status === "error") {
+        toast.error("Verification failed");
+        return;
+      }
+
+      // Verify the proof in the backend
+      const verifyResponse = await fetch("/api/verify", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          payload: finalPayload as ISuccessResult,
+          action: "proof-of-humanity",
+          signal: worldAddress || undefined,
+        }),
+      });
+
+      const verifyResponseJson = await verifyResponse.json();
+      console.log(verifyResponseJson);
+
+      if (verifyResponseJson.success) {
+        setWorldProof(finalPayload.proof);
+        setIsStep1Verified(true);
+        toast.success("Humanity verified successfully");
+        setCurrentStep(2);
+      } else {
+        console.error("Verification failed:", verifyResponseJson.error);
+        toast.error(verifyResponseJson.error || "Verification failed");
+      }
+    } catch (error: any) {
+      console.error("Verification error:", error);
+      toast.error(error.message || "An error occurred during verification");
     } finally {
       setIsLoading(false);
     }
@@ -134,15 +184,24 @@ export default function VerifySelfPage() {
               <p className="text-gray-600 dark:text-gray-400">
                 Complete the humanity verification process
               </p>
-              <Button
-                onClick={handleStep1}
-                className="w-full py-6 text-lg brutalist-button"
-                disabled={isLoading || currentStep !== 1}
-              >
-                {isLoading && currentStep === 1
-                  ? "VERIFYING..."
-                  : "VERIFY HUMANITY"}
-              </Button>
+              {isStep1Verified ? (
+                <div className="flex items-center justify-center space-x-2 text-[#10b981]">
+                  <Check className="h-6 w-6" />
+                  <span className="text-lg font-semibold">
+                    Humanity verified successfully
+                  </span>
+                </div>
+              ) : (
+                <Button
+                  onClick={handleStep1}
+                  className="w-full py-6 text-lg brutalist-button"
+                  disabled={isLoading || currentStep !== 1}
+                >
+                  {isLoading && currentStep === 1
+                    ? "VERIFYING..."
+                    : "VERIFY HUMANITY"}
+                </Button>
+              )}
             </motion.div>
 
             {/* Step 2 */}
