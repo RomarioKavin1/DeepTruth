@@ -312,10 +312,13 @@ export default function CreatePage() {
 
     try {
       // Fixed API endpoint - explicitly include /encrypt path
-      const response = await fetch(`${SERVER_URL}/encrypt`, {
-        method: "POST",
-        body: formData,
-      });
+      const response = await fetch(
+        `https://d4eb-111-235-226-130.ngrok-free.app/encrypt`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
