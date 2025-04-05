@@ -13,6 +13,7 @@ import {
   ISuccessResult,
 } from "@worldcoin/minikit-js";
 import { Check } from "lucide-react";
+import { getUniversalLink, SelfAppBuilder } from "@selfxyz/core";
 
 export default function VerifySelfPage() {
   const [currentStep, setCurrentStep] = useState(1);
@@ -20,7 +21,20 @@ export default function VerifySelfPage() {
   const [isStep1Verified, setIsStep1Verified] = useState(false);
   const router = useRouter();
   const { worldAddress } = useEnvironmentStore((store) => store);
-
+  const url = "https://8335-111-235-226-130.ngrok-free.app/api/self";
+  const selfApp = new SelfAppBuilder({
+    appName: "DeepTruth",
+    scope: "Deep Name Minting",
+    endpoint: url,
+    logoBase64: "",
+    userIdType: "hex",
+    userId: worldAddress || "0x89c27f76EEF3e09D798FB06a66Dd461d7d21f111",
+    disclosures: {
+      name: true,
+      nationality: true,
+    },
+  }).build();
+  const deeplink = getUniversalLink(selfApp);
   // Mock data for proofs
   const [worldProof, setWorldProof] = useState<string | null>(null);
   const [selfProof, setSelfProof] = useState<string | null>(null);
@@ -89,6 +103,9 @@ export default function VerifySelfPage() {
   const handleStep2 = async () => {
     try {
       setIsLoading(true);
+      console.log(url);
+
+      router.push(deeplink);
       // Mock verification process
       await new Promise((resolve) => setTimeout(resolve, 2000));
       setSelfProof("mock_self_proof_456");
