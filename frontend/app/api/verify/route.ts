@@ -34,6 +34,15 @@ export async function POST(req: NextRequest) {
     console.log("Verification result:", verifyRes);
 
     if (verifyRes.success) {
+      console.log("World ID Proof Details:", {
+        root: payload.merkle_root,
+        groupId: payload.nullifier_hash,
+        signalHash: signal,
+        nullifierHash: payload.nullifier_hash,
+        externalNullifierHash: action,
+        proof: payload.proof,
+      });
+
       return NextResponse.json({
         success: true,
         verifyRes,
