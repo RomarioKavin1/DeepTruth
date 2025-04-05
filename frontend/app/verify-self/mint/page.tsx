@@ -174,7 +174,7 @@ export default function MintPage() {
         try {
           result.push(BigInt("0x" + paddedSegment));
         } catch (e) {
-          console.warn(`Failed to convert segment ${i} to BigInt, using 0`);
+          console.warn(`Failed to convert segment ${i} to BigInt, using 0`, e);
           result.push(BigInt(0));
         }
       } else {
@@ -204,12 +204,12 @@ export default function MintPage() {
       const label = selfData.label
         .split(" ")
         .slice(0, 2)
-        .join(" ")
+        .join("")
         .toLowerCase();
       setMintedName(`${label}.deeptruth.eth`);
 
       // Check for owner address
-      const ownerAddress = "0x4774b9621102eac2254365f9311c4e7700d9e7de";
+      const ownerAddress = "0xf26244365e64f40d24307904d66659008d50cc00";
       if (!ownerAddress) {
         console.error("Owner address is null or undefined");
         setErrorDetails(
@@ -320,15 +320,20 @@ export default function MintPage() {
           localStorage.removeItem("deepNameMintData");
         } catch (e) {
           // Ignore localStorage errors
+          console.log("Error removing localStorage item:", e);
         }
 
         // Redirect to profile after 3 seconds
         setTimeout(() => {
           router.push("/profile");
         }, 3000);
-      } catch (validationError: any) {
+      } catch (validationError: unknown) {
         console.error("Data validation error:", validationError);
-        setErrorDetails(`Validation error: ${validationError.message}`);
+        if (validationError instanceof Error) {
+          setErrorDetails(`Validation error: ${validationError.message}`);
+        } else {
+          setErrorDetails("Unknown validation error occurred");
+        }
         toast.error("Data validation error");
         setIsMinting(false);
         return;
@@ -570,7 +575,7 @@ export default function MintPage() {
                                 const params = {
                                   label: selfData?.label,
                                   owner:
-                                    "0x4774b9621102eac2254365f9311c4e7700d9e7de",
+                                    "0xf26244365e64f40d24307904d66659008d50cc00",
                                   root: worldIdData?.root,
                                   nullifierHash: worldIdData?.nullifierHash,
                                   self_root: selfData?.self_root,
