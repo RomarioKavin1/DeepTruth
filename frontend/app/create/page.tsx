@@ -1,266 +1,259 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, FlipHorizontal, Loader2, Send } from "lucide-react";
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { Camera, Video, Check, X, RotateCw, ArrowLeft } from "lucide-react";
 
 export default function CreatePage() {
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
+  const previewRef = useRef<HTMLVideoElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const [stream, setStream] = useState<MediaStream | null>(null);
   const [isRecording, setIsRecording] = useState(false);
-  const [recordedVideo, setRecordedVideo] = useState<string | null>(null);
-  const [caption, setCaption] = useState("");
-  const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(
-    null
-  );
-  const chunksRef = useRef<Blob[]>([]);
+  const [recordedChunks, setRecordedChunks] = useState<Blob[]>([]);
+  const [showPreview, setShowPreview] = useState(false);
+  const [isFrontCamera, setIsFrontCamera] = useState(true);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const timerRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
-    startCamera();
-
     return () => {
-      stopCamera();
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
+      }
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
     };
-  }, [facingMode]);
+  }, [stream]);
 
-  const startCamera = async () => {
+  const startCamera = async (facingMode: "user" | "environment" = "user") => {
     try {
-      if (streamRef.current) {
-        stopCamera();
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
       }
 
-      const constraints = {
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode,
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          aspectRatio: { ideal: 16 / 9 },
+        },
         audio: true,
-        video: { facingMode },
-      };
-
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      streamRef.current = stream;
-
+      });
+      setStream(mediaStream);
       if (videoRef.current) {
-        videoRef.current.srcObject = stream;
+        videoRef.current.srcObject = mediaStream;
       }
-    } catch (err) {
-      console.error("Error accessing camera:", err);
+    } catch (error) {
+      console.error("Error accessing camera:", error);
+      toast.error("Failed to access camera");
     }
   };
 
-  const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-    }
-  };
-
-  const toggleCamera = () => {
-    setFacingMode(facingMode === "user" ? "environment" : "user");
+  const switchCamera = () => {
+    setIsFrontCamera(!isFrontCamera);
+    startCamera(isFrontCamera ? "environment" : "user");
   };
 
   const startRecording = () => {
-    if (!streamRef.current) return;
+    if (!stream) return;
 
-    chunksRef.current = [];
-    const recorder = new MediaRecorder(streamRef.current);
+    const mimeType = "video/mp4";
 
-    recorder.ondataavailable = (e) => {
-      if (e.data.size > 0) {
-        chunksRef.current.push(e.data);
+    const mediaRecorder = new MediaRecorder(stream, {
+      mimeType,
+      videoBitsPerSecond: 2500000,
+    });
+    mediaRecorderRef.current = mediaRecorder;
+    setRecordedChunks([]);
+    setRecordingTime(0);
+
+    mediaRecorder.ondataavailable = (event) => {
+      if (event.data && event.data.size > 0) {
+        setRecordedChunks((prev) => [...prev, event.data]);
       }
     };
 
-    recorder.onstop = () => {
-      const blob = new Blob(chunksRef.current, { type: "video/webm" });
-      const videoURL = URL.createObjectURL(blob);
-      setRecordedVideo(videoURL);
-      stopCamera();
+    mediaRecorder.onstop = () => {
+      setShowPreview(true);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
     };
 
-    recorder.start();
-    setMediaRecorder(recorder);
+    mediaRecorder.start(100);
     setIsRecording(true);
+
+    timerRef.current = setInterval(() => {
+      setRecordingTime((prev) => prev + 1);
+    }, 1000);
   };
 
   const stopRecording = () => {
-    if (mediaRecorder) {
-      mediaRecorder.stop();
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
       setIsRecording(false);
     }
   };
 
-  const processVideo = async () => {
-    setIsProcessing(true);
-
-    // Mock API call to process video
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    // In a real app, you would upload the video to your API endpoint
-    // and get back a processed video URL
-
-    setIsProcessing(false);
-    router.push("/feed");
+  const retakeVideo = () => {
+    setShowPreview(false);
+    setRecordedChunks([]);
+    if (videoRef.current) {
+      videoRef.current.srcObject = stream;
+    }
   };
 
-  const resetRecording = () => {
-    setRecordedVideo(null);
-    startCamera();
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, "0")}:${secs
+      .toString()
+      .padStart(2, "0")}`;
+  };
+
+  const handleSubmit = async () => {
+    if (recordedChunks.length === 0) {
+      toast.error("No video recorded");
+      return;
+    }
+
+    const blob = new Blob(recordedChunks, { type: "video/mp4" });
+    const formData = new FormData();
+    formData.append("video", blob);
+
+    try {
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        toast.success("Video uploaded successfully");
+        router.push("/verify-self/mint");
+      } else {
+        toast.error("Failed to upload video");
+      }
+    } catch (error) {
+      console.error("Error uploading video:", error);
+      toast.error("Failed to upload video");
+    }
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#f5f5f5] dark:bg-black">
-      <motion.header
-        className="sticky top-0 z-10 flex items-center p-4 bg-[#f5f5f5] dark:bg-black border-b-2 border-black dark:border-white"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+    <div className="fixed inset-0 bg-black">
+      <div className="h-screen w-screen flex flex-col">
+        {/* Header */}
+        <div className="absolute top-0 left-0 right-0 z-50 flex items-center justify-between p-4">
           <Button
-            variant="outline"
-            size="icon"
-            onClick={() => router.push("/feed")}
-            className="brutalist-box p-2 bg-white dark:bg-black"
+            onClick={() => router.back()}
+            className="p-2 rounded-full bg-black/50 hover:bg-black/70 backdrop-blur-sm"
           >
-            <ArrowLeft className="h-6 w-6" />
+            <ArrowLeft className="w-6 h-6 text-white" />
           </Button>
-        </motion.div>
-        <h1 className="flex-1 text-center text-2xl font-bold">
-          CREATE <span className="text-[#10b981]">DEEP TRUTH</span>
-        </h1>
-        <div className="w-10"></div>
-      </motion.header>
+          <div className="flex-1 flex justify-end">
+            <h1 className="text-xl font-bold text-white transformorigin-center">
+              CREATE YOUR <span className="text-[#10b981]">DEEP TRUTH</span>
+            </h1>
+          </div>
+          <div className="w-10" /> {/* Spacer for balance */}
+        </div>
 
-      <main className="flex-1 flex flex-col">
-        <motion.div
-          className="relative aspect-[9/16] w-full bg-black brutalist-box border-0 shadow-none"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
-          {!recordedVideo ? (
-            <>
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-              <div className="absolute bottom-4 left-0 right-0 flex justify-center space-x-6">
-                {isRecording ? (
-                  <motion.div
-                    animate={{ scale: [1, 1.1, 1] }}
-                    transition={{
-                      repeat: Number.POSITIVE_INFINITY,
-                      duration: 1.5,
-                    }}
-                  >
-                    <Button
-                      onClick={stopRecording}
-                      size="lg"
-                      className="rounded-none w-16 h-16 brutalist-button bg-red-500"
-                    >
-                      <div className="w-6 h-6 bg-white dark:bg-black"></div>
-                    </Button>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                  >
-                    <Button
-                      onClick={startRecording}
-                      size="lg"
-                      className="rounded-full w-16 h-16 brutalist-button"
-                    >
-                      <div className="w-6 h-6 rounded-full border-4 border-white dark:border-black"></div>
-                    </Button>
-                  </motion.div>
-                )}
-
-                <motion.div
-                  whileHover={{ scale: 1.1, rotate: 15 }}
-                  whileTap={{ scale: 0.9 }}
-                >
-                  <Button
-                    onClick={toggleCamera}
-                    variant="outline"
-                    size="icon"
-                    className="brutalist-box bg-white dark:bg-black"
-                  >
-                    <FlipHorizontal className="h-6 w-6" />
-                  </Button>
-                </motion.div>
-              </div>
-            </>
-          ) : (
+        {/* Camera View */}
+        <div className="flex-1 relative">
+          {!stream && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Camera className="w-16 h-16 text-gray-400" />
+            </div>
+          )}
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className="w-full h-full object-cover"
+            style={{ transform: "scaleX(-1)" }}
+          />
+          {showPreview && recordedChunks.length > 0 && (
             <video
-              src={recordedVideo}
+              ref={previewRef}
+              src={URL.createObjectURL(
+                new Blob(recordedChunks, { type: "video/mp4" })
+              )}
               controls
-              className="absolute inset-0 w-full h-full object-cover"
+              className="absolute inset-0 w-full h-full"
+              autoPlay
+              playsInline
             />
           )}
-        </motion.div>
-
-        {recordedVideo && (
-          <motion.div
-            className="p-4 space-y-4"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-          >
-            <Textarea
-              placeholder="Share your deep truth..."
-              value={caption}
-              onChange={(e) => setCaption(e.target.value)}
-              className="brutalist-input"
-            />
-
-            <div className="flex space-x-4">
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Button
-                  variant="outline"
-                  className="flex-1 brutalist-box bg-white dark:bg-black"
-                  onClick={resetRecording}
-                >
-                  RETAKE
-                </Button>
-              </motion.div>
-
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Button
-                  className="flex-1 brutalist-button"
-                  onClick={processVideo}
-                  disabled={isProcessing}
-                >
-                  {isProcessing ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      PROCESSING
-                    </>
-                  ) : (
-                    <>
-                      <Send className="mr-2 h-4 w-4" />
-                      SHARE
-                    </>
-                  )}
-                </Button>
-              </motion.div>
+          {isRecording && (
+            <div className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1 rounded-full flex items-center shadow-lg">
+              <div className="w-2 h-2 bg-white rounded-full mr-2 animate-pulse" />
+              <span className="font-bold text-sm">
+                {formatTime(recordingTime)}
+              </span>
             </div>
-          </motion.div>
-        )}
-      </main>
+          )}
+          {stream && !showPreview && (
+            <div className="absolute top-4 left-4">
+              <Button
+                onClick={switchCamera}
+                className="p-2 rounded-full bg-black/50 hover:bg-black/70 backdrop-blur-sm"
+              >
+                <RotateCw className="w-6 h-6 text-white" />
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* Controls */}
+        <div className="absolute bottom-0 left-0 right-0 p-6 flex items-center justify-center space-x-6">
+          {!stream ? (
+            <Button
+              onClick={() => startCamera()}
+              className="w-16 h-16 rounded-full bg-[#10b981] hover:bg-[#0d8c6a]"
+            >
+              <Camera className="w-8 h-8 text-white" />
+            </Button>
+          ) : showPreview ? (
+            <div className="flex space-x-4">
+              <Button
+                onClick={retakeVideo}
+                className="w-16 h-16 rounded-full bg-red-500 hover:bg-red-600"
+              >
+                <X className="w-8 h-8 text-white" />
+              </Button>
+              <Button
+                onClick={handleSubmit}
+                className="w-16 h-16 rounded-full bg-[#10b981] hover:bg-[#0d8c6a]"
+              >
+                <Check className="w-8 h-8 text-white" />
+              </Button>
+            </div>
+          ) : (
+            <Button
+              onClick={isRecording ? stopRecording : startRecording}
+              className={`w-16 h-16 rounded-full ${
+                isRecording
+                  ? "bg-red-500 hover:bg-red-600"
+                  : "bg-[#10b981] hover:bg-[#0d8c6a]"
+              }`}
+            >
+              {isRecording ? (
+                <div className="w-8 h-8 bg-white rounded" />
+              ) : (
+                <div className="w-8 h-8 bg-white rounded-full" />
+              )}
+            </Button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
