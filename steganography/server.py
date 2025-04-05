@@ -12,7 +12,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa, padding as rsa_paddin
 from cryptography.hazmat.primitives import serialization, hashes
 from werkzeug.utils import secure_filename
 from flask_cors import CORS
-from datetime import datetime
+from datetime import datetimex
 import subprocess
 from werkzeug.datastructures import FileStorage
 from io import BytesIO
@@ -910,9 +910,9 @@ def encrypt_endpoint():
         
         # Create response with both files
         response = {
-            "mov": base64.b64encode(mov_data).decode('utf-8'),
+            # "mov": base64.b64encode(mov_data).decode('utf-8'),
             "mp4": base64.b64encode(mp4_data).decode('utf-8'),
-            "mov_filename": output_filename,
+            # "mov_filename": output_filename,
             "mp4_filename": os.path.basename(mp4_path)
         }
         

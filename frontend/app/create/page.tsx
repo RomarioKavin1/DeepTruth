@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 
 // Server URL for steganography API
-const SERVER_URL = "https://bd08-111-235-226-130.ngrok-free.app";
+const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL;
 
 // Hardcoded secret message
 const HARDCODED_SECRET_MESSAGE = "abcdefghijklmnopqrstuvwxyz";
@@ -51,9 +51,7 @@ export default function CreatePage() {
   console.log(uploadedVideoData);
   // Steganography specific states
   const [encryptedVideoData, setEncryptedVideoData] = useState<{
-    mov: string;
     mp4: string;
-    mov_filename: string;
     mp4_filename: string;
   } | null>(null);
   const [activeFormat, setActiveFormat] = useState<"mp4" | "mov">("mp4");
@@ -153,8 +151,7 @@ export default function CreatePage() {
   const getCurrentVideoUrl = (): string | null => {
     if (!encryptedVideoData) return previewUrl;
 
-    const base64Data =
-      activeFormat === "mov" ? encryptedVideoData.mov : encryptedVideoData.mp4;
+    const base64Data = encryptedVideoData.mp4;
     const mimeType = activeFormat === "mov" ? "video/quicktime" : "video/mp4";
     const blob = base64ToBlob(base64Data, mimeType);
     return URL.createObjectURL(blob);
@@ -331,9 +328,7 @@ export default function CreatePage() {
 
       // Store the encrypted video data
       setEncryptedVideoData({
-        mov: result.mov,
         mp4: result.mp4,
-        mov_filename: result.mov_filename || "deeptruth.mov",
         mp4_filename: result.mp4_filename || "deeptruth.mp4",
       });
 
@@ -365,17 +360,13 @@ export default function CreatePage() {
   const downloadVideo = () => {
     if (!encryptedVideoData) return;
 
-    const base64Data =
-      activeFormat === "mov" ? encryptedVideoData.mov : encryptedVideoData.mp4;
+    const base64Data = encryptedVideoData.mp4;
 
     const mimeType = activeFormat === "mov" ? "video/quicktime" : "video/mp4";
 
     const filename =
-      activeFormat === "mov"
-        ? encryptedVideoData.mov_filename ||
-          `${videoTitle.replace(/\s+/g, "_")}.mov`
-        : encryptedVideoData.mp4_filename ||
-          `${videoTitle.replace(/\s+/g, "_")}.mp4`;
+      encryptedVideoData.mp4_filename ||
+      `${videoTitle.replace(/\s+/g, "_")}.mp4`;
 
     const blob = base64ToBlob(base64Data, mimeType);
     const url = URL.createObjectURL(blob);
