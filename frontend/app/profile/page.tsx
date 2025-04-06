@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ethers } from "ethers";
+import Navigation from "@/components/navigation";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -159,7 +160,7 @@ export default function ProfilePage() {
         </div>
       </main>
 
-      {/* Add offchain mode button */}
+      <Navigation />
 
       {selectedVideo && (
         <motion.div

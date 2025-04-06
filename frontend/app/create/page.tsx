@@ -20,6 +20,7 @@ import {
   Instagram,
   Loader,
 } from "lucide-react";
+import Navigation from "@/components/navigation";
 
 // Server URL for steganography API
 // Fix: Use the correct API endpoint with path
@@ -644,95 +645,98 @@ export default function CreatePage() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-2 md:p-4 bg-[#f5f5f5] dark:bg-black relative overflow-hidden">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8 }}
-        className="w-full max-w-4xl text-center space-y-4 md:space-y-8 z-10"
-      >
-        {/* Back button to /feed */}
-        <div className="absolute top-2 md:top-4 left-2 md:left-4 z-20">
-          <Button
-            onClick={goToFeed}
-            variant="ghost"
-            size="sm"
-            className="flex items-center text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800 p-1 md:p-2"
-          >
-            <ArrowLeft className="w-4 h-4 md:w-5 md:h-5 mr-1 md:mr-2" />
-            <span className="text-xs md:text-sm">Back</span>
-          </Button>
-        </div>
-
+    <div className="flex flex-col h-full fixed inset-0 bg-[#f5f5f5] dark:bg-black">
+      <Navigation />
+      <div className="flex flex-col items-center justify-center min-h-screen p-2 md:p-4 bg-[#f5f5f5] dark:bg-black relative overflow-hidden">
         <motion.div
-          initial={{ scale: 0.9 }}
-          animate={{ scale: 1 }}
-          transition={{
-            type: "spring",
-            stiffness: 260,
-            damping: 20,
-          }}
-          className="brutalist-box p-3 md:p-6 bg-white dark:bg-black rounded-lg mt-10 md:mt-0"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          className="w-full max-w-4xl text-center space-y-4 md:space-y-8 z-10"
         >
-          <motion.h1
-            className="text-2xl md:text-4xl font-bold tracking-tight text-black dark:text-white mb-4 md:mb-6"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.5 }}
-          >
-            CREATE YOUR <span className="text-[#10b981]">DEEP TRUTH</span> NOW
-          </motion.h1>
-
-          {/* Main content area - renders different views based on state */}
-          {renderContent()}
-
-          {/* Action buttons */}
-          <div className="flex flex-col space-y-2 md:space-y-4">
-            {!stream && !isUploading && !showShareOptions ? (
-              <Button
-                onClick={() => startCamera()}
-                className="w-full py-3 md:py-6 text-base md:text-lg brutalist-button"
-              >
-                START CAMERA
-              </Button>
-            ) : showPreview && !isUploading && !showShareOptions ? (
-              <div className="flex space-x-2 md:space-x-4">
-                <Button
-                  onClick={retakeVideo}
-                  className="flex-1 py-3 md:py-6 text-base md:text-lg brutalist-button bg-red-500 hover:bg-red-600"
-                >
-                  <X className="w-4 h-4 md:w-5 md:h-5 mr-1 md:mr-2" />
-                  RETAKE
-                </Button>
-                <Button
-                  onClick={handleSubmit}
-                  className="flex-1 py-3 md:py-6 text-base md:text-lg brutalist-button"
-                >
-                  <Check className="w-4 h-4 md:w-5 md:h-5 mr-1 md:mr-2" />
-                  SUBMIT
-                </Button>
-              </div>
-            ) : stream && !showPreview && !isUploading ? (
-              <Button
-                onClick={isRecording ? stopRecording : startRecording}
-                className={`w-full py-3 md:py-6 text-base md:text-lg brutalist-button ${
-                  isRecording ? "bg-red-500 hover:bg-red-600" : ""
-                }`}
-              >
-                <Video className="w-4 h-4 md:w-5 md:h-5 mr-1 md:mr-2" />
-                {isRecording ? "STOP RECORDING" : "START RECORDING"}
-              </Button>
-            ) : showShareOptions ? (
-              <Button
-                onClick={() => router.push("/feed")}
-                className="w-full py-3 md:py-6 text-base md:text-lg brutalist-button"
-              >
-                VIEW ON FEED
-              </Button>
-            ) : null}
+          {/* Back button to /feed */}
+          <div className="absolute top-2 md:top-4 left-2 md:left-4 z-20">
+            <Button
+              onClick={goToFeed}
+              variant="ghost"
+              size="sm"
+              className="flex items-center text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800 p-1 md:p-2"
+            >
+              <ArrowLeft className="w-4 h-4 md:w-5 md:h-5 mr-1 md:mr-2" />
+              <span className="text-xs md:text-sm">Back</span>
+            </Button>
           </div>
+
+          <motion.div
+            initial={{ scale: 0.9 }}
+            animate={{ scale: 1 }}
+            transition={{
+              type: "spring",
+              stiffness: 260,
+              damping: 20,
+            }}
+            className="brutalist-box p-3 md:p-6 bg-white dark:bg-black rounded-lg mt-10 md:mt-0"
+          >
+            <motion.h1
+              className="text-2xl md:text-4xl font-bold tracking-tight text-black dark:text-white mb-4 md:mb-6"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.5 }}
+            >
+              CREATE YOUR <span className="text-[#10b981]">DEEP TRUTH</span> NOW
+            </motion.h1>
+
+            {/* Main content area - renders different views based on state */}
+            {renderContent()}
+
+            {/* Action buttons */}
+            <div className="flex flex-col space-y-2 md:space-y-4">
+              {!stream && !isUploading && !showShareOptions ? (
+                <Button
+                  onClick={() => startCamera()}
+                  className="w-full py-3 md:py-6 text-base md:text-lg brutalist-button"
+                >
+                  START CAMERA
+                </Button>
+              ) : showPreview && !isUploading && !showShareOptions ? (
+                <div className="flex space-x-2 md:space-x-4">
+                  <Button
+                    onClick={retakeVideo}
+                    className="flex-1 py-3 md:py-6 text-base md:text-lg brutalist-button bg-red-500 hover:bg-red-600"
+                  >
+                    <X className="w-4 h-4 md:w-5 md:h-5 mr-1 md:mr-2" />
+                    RETAKE
+                  </Button>
+                  <Button
+                    onClick={handleSubmit}
+                    className="flex-1 py-3 md:py-6 text-base md:text-lg brutalist-button"
+                  >
+                    <Check className="w-4 h-4 md:w-5 md:h-5 mr-1 md:mr-2" />
+                    SUBMIT
+                  </Button>
+                </div>
+              ) : stream && !showPreview && !isUploading ? (
+                <Button
+                  onClick={isRecording ? stopRecording : startRecording}
+                  className={`w-full py-3 md:py-6 text-base md:text-lg brutalist-button ${
+                    isRecording ? "bg-red-500 hover:bg-red-600" : ""
+                  }`}
+                >
+                  <Video className="w-4 h-4 md:w-5 md:h-5 mr-1 md:mr-2" />
+                  {isRecording ? "STOP RECORDING" : "START RECORDING"}
+                </Button>
+              ) : showShareOptions ? (
+                <Button
+                  onClick={() => router.push("/feed")}
+                  className="w-full py-3 md:py-6 text-base md:text-lg brutalist-button"
+                >
+                  VIEW ON FEED
+                </Button>
+              ) : null}
+            </div>
+          </motion.div>
         </motion.div>
-      </motion.div>
+      </div>
     </div>
   );
 }

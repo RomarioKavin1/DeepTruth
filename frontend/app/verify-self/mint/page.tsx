@@ -209,7 +209,7 @@ export default function MintPage() {
       setMintedName(`${label}.deeptruth.eth`);
 
       // Check for owner address
-      const ownerAddress = "0xf26244365e64f40d24307904d66659008d50cc00";
+      const ownerAddress = MiniKit.user?.walletAddress;
       if (!ownerAddress) {
         console.error("Owner address is null or undefined");
         setErrorDetails(
@@ -574,8 +574,7 @@ export default function MintPage() {
                                 // Try to copy all params to clipboard
                                 const params = {
                                   label: selfData?.label,
-                                  owner:
-                                    "0xf26244365e64f40d24307904d66659008d50cc00",
+                                  owner: MiniKit.user?.walletAddress,
                                   root: worldIdData?.root,
                                   nullifierHash: worldIdData?.nullifierHash,
                                   self_root: selfData?.self_root,
