@@ -24,7 +24,7 @@ DeepTruth combats the rise of deepfakes by creating videos with embedded verific
 
 ## Contract Addresses
 
-- **ENS Registry**: [0x2565b1f8bfd174d3acb67fd1a377b8014350dc26](https://etherscan.io/address/0x2565b1f8bfd174d3acb67fd1a377b8014350dc26) (Ethereum Mainnet)
+- **ENS Registry**: [0x2565b1f8bfd174d3acb67fd1a377b8014350dc26](Ethereum Mainnet)
 - **ENS Registrar**: [0x3Df0C30a02221FAb4fbdE6Ae7dd288F00F563bBF] (World ID Mainnet)
 - **World Video Registry**: [0xCd0838dBb89975aDc8eD8d8bd262bC72EC10EC00] (World ID Mainnet)
 
