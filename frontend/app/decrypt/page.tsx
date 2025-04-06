@@ -136,7 +136,7 @@ export default function VideoDecryption() {
   };
 
   // URL for the server
-  const SERVER_URL = "http://localhost:5001";
+  const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL;
 
   return (
     <div className="flex flex-col min-h-screen bg-[#f5f5f5] dark:bg-black relative overflow-hidden">
